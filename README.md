@@ -1,5 +1,6 @@
-# GDLuau
+# GDLuau For Vertexia
 A GDExtension that adds [Luau](https://luau-lang.org) C/C++ API bindings to GDScript
+This fork specifically was made for Vertexia, https://vertexia.xyz
 *(+ some extras)*
 
 > **Warning**
