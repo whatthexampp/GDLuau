@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import os
+import sys
 
 
 def normalize_path(val, env):
@@ -14,7 +15,7 @@ def validate_parent_dir(key, val, env):
 libname = "gdluau"
 projectdir = "demo"
 
-localEnv = Environment(tools=["default"], PLATFORM="")
+localEnv = Environment(tools=["default"], PLATFORM="", ENV=os.environ)
 
 customs = ["custom.py"]
 customs = [os.path.abspath(path) for path in customs]
@@ -39,6 +40,15 @@ opts.Update(localEnv)
 
 Help(opts.GenerateHelpText(localEnv))
 
+if sys.platform == "win32" and ARGUMENTS.get("platform") == "linux":
+    print("\n" + "="*80)
+    print("ERROR: Invalid target platform.")
+    print("You are running on Windows but requested a Linux build (platform=linux).")
+    print("MinGW cannot cross-compile to Linux. To build the extension for Windows, run:")
+    print("    scons platform=windows use_mingw=yes")
+    print("="*80 + "\n")
+    Exit(1)
+
 env = localEnv.Clone()
 env["compiledb"] = False
 
@@ -60,20 +70,6 @@ file = "{}{}{}".format(libname, env["suffix"], env["SHLIBSUFFIX"])
 
 ### > LUAU STUFF
 
-# lua_env = env.Clone()
-
-# # if env["target"] == "template_debug":
-# #     lua_env.Append(CCFLAGS=["-g"])
-
-# if lua_env["platform"] == "linux":
-#     lua_env.Append(CPPDEFINES=["LUA_USE_POSIX"])
-# elif lua_env["platform"] == "ios":
-#     lua_env.Append(CPPDEFINES=["LUA_USE_IOS"])
-
-# lua_env.Append(CPPDEFINES = ["MAKE_LIB"])
-# # lua_env.Append(CXXFLAGS = ["-std=c++17"])
-# lua_env.Append(CFLAGS = ["-std=c99"])
-
 lua_cpp_paths = []
 
 luau_paths = [
@@ -92,7 +88,6 @@ lua_cpp_paths.extend(luau_include_paths)
 lua_cpp_paths.extend(luau_source_paths)
 
 env.Append(CPPPATH=lua_cpp_paths)
-# env.AppendUnique(CPPPATH=lua_cpp_paths, delete_existing=True)
 
 
 lua_includes = []
@@ -100,24 +95,14 @@ lua_sources = []
 for path in luau_include_paths:
     lua_includes.extend(Glob(path + "/*.hpp"))
     lua_includes.extend(Glob(path + "/*.h"))
-    # lua_includes.extend(Glob(path + "/*.cpp"))
-    # lua_includes.extend(Glob(path + "/*.c"))
 
 for path in luau_source_paths:
-    # lua_sources.extend(Glob(path + "/*.hpp"))
-    # lua_sources.extend(Glob(path + "/*.h"))
     lua_sources.extend(Glob(path + "/*.cpp"))
     lua_sources.extend(Glob(path + "/*.c"))
 
 sources.extend(lua_sources)
 
-# lua_file = "{}{}{}".format("luau", env["suffix"], env["SHLIBSUFFIX"])
-# lua_libraryfile = "bin/{}/{}".format(env["platform"], lua_file)
-# lua_library = lua_env.StaticLibrary(lua_libraryfile, source=lua_sources)
-
 ### < LUAU STUFF
-
-
 
 
 if env["platform"] == "macos":
@@ -126,7 +111,6 @@ if env["platform"] == "macos":
 
 libraryfile = "bin/{}/{}".format(env["platform"], file)
 
-# env.Append(CXXFLAGS=["-g"])
 env.Append(CXXFLAGS=["-fexceptions"])
 library = env.SharedLibrary(
     libraryfile,

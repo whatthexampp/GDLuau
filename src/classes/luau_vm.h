@@ -197,10 +197,7 @@ public:
 }
 
 
-VARIANT_ENUM_CAST(lua_Status);
-VARIANT_ENUM_CAST(lua_Type);
 VARIANT_ENUM_CAST(lua_Lib);
-VARIANT_ENUM_CAST(lua_GCOp);
 
 int luaopen_vector(lua_State *L);
 
