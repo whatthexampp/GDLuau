@@ -2,6 +2,7 @@
 #include <godot_cpp/variant/callable.hpp>
 #include <godot_cpp/variant/color.hpp>
 #include <godot_cpp/variant/dictionary.hpp>
+#include <godot_cpp/variant/signal.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
 
 void lua_pushvariant(lua_State *L, const godot::Variant &var) {
@@ -70,7 +71,17 @@ void lua_pushvariant(lua_State *L, const godot::Variant &var) {
 			lua_pushcallable(L, c, godot::String());
 			break;
 		}
-
+		case godot::Variant::Type::SIGNAL: {
+			godot::Signal s = var.operator godot::Signal();
+			SignalWrapped *sig = (SignalWrapped *)lua_newuserdata(L, sizeof(SignalWrapped));
+			sig->object_id = s.get_object_id();
+			godot::String sname = s.get_name();
+			strncpy(sig->signal_name, sname.ascii().get_data(), 127);
+			sig->signal_name[127] = '\0';
+			luaL_getmetatable(L, "signal");
+			lua_setmetatable(L, -2);
+			break;
+		}
 		case godot::Variant::Type::OBJECT: {
 			godot::Object *o = var.operator godot::Object *();
 			lua_pushobject(L, o);
@@ -248,7 +259,16 @@ int lua_pushcallable_method(lua_State *L) {
 
 	int nargs = lua_gettop(L);
 	godot::Array arr;
-	for (int i = 1; i <= nargs; i++) {
+	int start_idx = 1;
+
+	if (nargs > 0 && lua_isobject(L, 1)) {
+		godot::Object *arg1 = lua_toobject(L, 1);
+		if (arg1 == object_p) {
+			start_idx = 2;
+		}
+	}
+
+	for (int i = start_idx; i <= nargs; i++) {
 		arr.push_back(lua_tovariant(L, i));
 	}
 

@@ -82,14 +82,13 @@ void LuauVM::_bind_methods() {
 	ADD_SIGNAL(MethodInfo("interrupt"));
 }
 
-struct SignalWrapped {
-	int64_t object_id;
-	char signal_name[128];
-};
-
 int signal_connect(lua_State *L) {
 	SignalWrapped *sig = (SignalWrapped *)lua_touserdata(L, lua_upvalueindex(1));
-	if (!lua_isfunction(L, 1)) {
+	int func_idx = 1;
+	if (lua_type(L, 1) == LUA_TUSERDATA) {
+		func_idx = 2;
+	}
+	if (!lua_isfunction(L, func_idx)) {
 		luaL_error(L, "Connect requires a function argument");
 		return 0;
 	}
@@ -100,7 +99,7 @@ int signal_connect(lua_State *L) {
 		return 0;
 	}
 
-	godot::Ref<godot::LuauFunction> func = lua_tofunction(L, 1);
+	godot::Ref<godot::LuauFunction> func = lua_tofunction(L, func_idx);
 	godot::Callable c = godot::Callable(func.ptr(), "pcall");
 	obj->connect(sig->signal_name, c);
 
@@ -114,7 +113,7 @@ int signal_connect(lua_State *L) {
 int metatable_signal__index(lua_State *L) {
 	SignalWrapped *sig = (SignalWrapped *)lua_touserdata(L, 1);
 	godot::String key = ::lua_tostring(L, 2);
-	if (key == "Connect") {
+	if (key == "Connect" || key == "connect") {
 		::lua_pushvalue(L, 1);
 		::lua_pushcclosure(L, signal_connect, "Connect", 1);
 		return 1;
@@ -174,7 +173,7 @@ int metatable_object__index(lua_State *L) {
 		godot_key = "value";
 
 	godot::Variant val = obj->get(godot_key);
-	if (val.get_type() != godot::Variant::NIL) {
+	if (val.get_type() != godot::Variant::NIL && val.get_type() != godot::Variant::SIGNAL) {
 		::lua_pushvariant(L, val);
 		return 1;
 	}

@@ -8,6 +8,10 @@
 #include <lualib.h>
 #include <classes/luau_vm.h>
 
+struct SignalWrapped {
+	int64_t object_id;
+	char signal_name[128];
+};
 
 void lua_pushvariant(lua_State *L, const godot::Variant &var);
 void lua_pusharray(lua_State *L, const godot::Array &array);
