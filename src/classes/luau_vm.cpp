@@ -162,7 +162,7 @@ int metatable_object__index(lua_State *L) {
 	else if (key == "Rotation")
 		godot_key = "rotation_degrees";
 	else if (key == "Size" || key == "Scale")
-		godot_key = "scale";
+		godot_key = "size";
 	else if (key == "Name")
 		godot_key = "name";
 	else if (key == "Color")
@@ -256,7 +256,7 @@ int metatable_object__newindex(lua_State *L) {
 	else if (key == "Rotation")
 		godot_key = "rotation_degrees";
 	else if (key == "Size" || key == "Scale")
-		godot_key = "scale";
+		godot_key = "size";
 	else if (key == "Name")
 		godot_key = "name";
 	else if (key == "Color")
