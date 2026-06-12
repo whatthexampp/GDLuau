@@ -40,6 +40,8 @@ static lua_CompileOptions luau_vm_compile_options = {
 using ms = std::chrono::duration<double, std::milli>;
 void luau_vm_interrupt_method(lua_State *L, int gc) {
 	LuauVM *node = lua_getnode(L);
+	if (!node)
+		return;
 	double cooldown = node->interrupt_cooldown;
 	auto now = std::chrono::system_clock::now();
 
@@ -221,6 +223,15 @@ int metatable_object__index(lua_State *L) {
 		return 1;
 	}
 
+	godot::Node *node = godot::Object::cast_to<godot::Node>(obj);
+	if (node) {
+		godot::Node *child = node->get_node_or_null(godot::NodePath(key));
+		if (child) {
+			::lua_pushobject(L, child);
+			return 1;
+		}
+	}
+
 	::lua_pushnil(L);
 	return 1;
 }
@@ -325,26 +336,28 @@ void LuauVM::create_metatables() {
 
 static int godot_print(lua_State *L) {
 	LuauVM *node = lua_getnode(L);
-	int nargs = node->lua_gettop();
+	int nargs = lua_gettop(L);
 
 	String s = String();
 	for (int i = 1; i <= nargs; i++) {
 		String ss;
-		if (node->lua_isnumber(i) || node->lua_isstring(i))
-			ss = (node->lua_tostring)(i);
-		else {
-			(node->lua_getglobal)("tostring");
-			node->lua_pushvalue(i);
+		if (lua_isnumber(L, i) || lua_isstring(L, i)) {
+			const char *str = lua_tostring(L, i);
+			ss = str ? String(str) : String("null");
+		} else {
+			lua_getglobal(L, "tostring");
+			lua_pushvalue(L, i);
 
-			int err = node->lua_pcall(1, 1, 0);
+			int err = lua_pcall(L, 1, 1, 0);
 
 			if (err != LUA_OK) {
 				lua_error(L);
 				return 0;
 			}
 
-			ss = (node->lua_tostring)(-1);
-			(node->lua_pop)(1);
+			const char *str = lua_tostring(L, -1);
+			ss = str ? String(str) : String("null");
+			lua_pop(L, 1);
 		}
 
 		s += ss;
@@ -352,7 +365,9 @@ static int godot_print(lua_State *L) {
 			s += '\t';
 	}
 
-	node->emit_signal("stdout", s);
+	if (node) {
+		node->emit_signal("stdout", s);
+	}
 	return 0;
 }
 

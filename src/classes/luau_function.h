@@ -5,9 +5,6 @@
 #include <lua.h>
 #include <lualib.h>
 
-
-
-
 namespace godot {
 
 class LuauFunction : public RefCounted {
@@ -16,6 +13,7 @@ class LuauFunction : public RefCounted {
 private:
     lua_State *L = nullptr;
     int ref = LUA_REFNIL;
+    uint64_t vm_id = 0;
 
 protected:
     static void _bind_methods();
@@ -33,6 +31,5 @@ private:
 };
 
 }
-
 
 godot::Ref<godot::LuauFunction> lua_tofunction(lua_State *L, int idx);
